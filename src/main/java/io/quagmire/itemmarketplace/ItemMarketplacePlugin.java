@@ -18,8 +18,10 @@ import io.quagmire.itemmarketplace.commands.admin.core.AdminUnknownCommand;
 import io.quagmire.itemmarketplace.commands.admin.reload.AdminReloadCommand;
 import io.quagmire.itemmarketplace.commands.player.core.PlayerHelpCommand;
 import io.quagmire.itemmarketplace.commands.player.core.PlayerUnknownCommand;
+import io.quagmire.itemmarketplace.commands.player.listings.PlayerListingsCommand;
 import io.quagmire.itemmarketplace.databases.DatabaseCollection;
 import io.quagmire.itemmarketplace.manager.ListingManager;
+import io.quagmire.itemmarketplace.menu.ListingsMenu;
 import io.quagmire.itemmarketplace.messages.Message;
 import lombok.Getter;
 import org.bukkit.event.HandlerList;
@@ -128,6 +130,10 @@ public class ItemMarketplacePlugin extends CorePlugin implements MenuPluginInter
 //      menuManager.register(menu, new ItemFilterMenu(this, menu));
 //    });
 //
+    
+    // Register the listings menu
+    menuManager.register("listings", new ListingsMenu(this, "listings"));
+    
     menuManager.reload();
     getServer().getPluginManager().registerEvents(menuManager, this);
   }
@@ -144,6 +150,7 @@ public class ItemMarketplacePlugin extends CorePlugin implements MenuPluginInter
 
     commandRegistry.register(PlayerHelpCommand.class);
     commandRegistry.register(PlayerUnknownCommand.class);
+    commandRegistry.register(PlayerListingsCommand.class);
 
     commandRegistry.setDefaultCommand("help");
     commandRegistry.setFallbackCommand("unknown");
