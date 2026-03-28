@@ -256,6 +256,13 @@ public class ListingManager {
     }
     
     /**
+     * Remove all cached listings for a given seller UUID
+     */
+    public void removeListingsBySeller(UUID sellerUuid) {
+        activeListings.values().removeIf(listing -> listing.getSellerUuid().equals(sellerUuid));
+    }
+
+    /**
      * Get all active listings
      */
     public List<MarketplaceListing> getAllListings() {

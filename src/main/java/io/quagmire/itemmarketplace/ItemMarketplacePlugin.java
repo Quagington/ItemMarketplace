@@ -175,7 +175,8 @@ public class ItemMarketplacePlugin extends CorePlugin implements MenuPluginInter
     if (getServer().getPluginManager().isPluginEnabled("AccountManagement")) {
       AccountManagementLoader.load(
               databaseCollection.getListingsDatabase(),
-              databaseCollection.getTransactionHistoryDatabase()
+              databaseCollection.getTransactionHistoryDatabase(),
+              listingManager
       );
       getLogger().info("AccountManagement found! Registered ItemMarketplace data provider.");
     }

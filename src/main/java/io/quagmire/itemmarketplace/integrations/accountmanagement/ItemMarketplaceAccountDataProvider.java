@@ -3,6 +3,7 @@ package io.quagmire.itemmarketplace.integrations.accountmanagement;
 import com.trappedmc.accountmanagement.api.*;
 import io.quagmire.itemmarketplace.databases.implementations.ListingsDatabase;
 import io.quagmire.itemmarketplace.databases.implementations.TransactionHistoryDatabase;
+import io.quagmire.itemmarketplace.manager.ListingManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
@@ -17,10 +18,12 @@ public class ItemMarketplaceAccountDataProvider implements AccountDataProvider {
 
     private final ListingsDatabase listingsDatabase;
     private final TransactionHistoryDatabase transactionHistoryDatabase;
+    private final ListingManager listingManager;
 
-    public ItemMarketplaceAccountDataProvider(ListingsDatabase listingsDatabase, TransactionHistoryDatabase transactionHistoryDatabase) {
+    public ItemMarketplaceAccountDataProvider(ListingsDatabase listingsDatabase, TransactionHistoryDatabase transactionHistoryDatabase, ListingManager listingManager) {
         this.listingsDatabase = listingsDatabase;
         this.transactionHistoryDatabase = transactionHistoryDatabase;
+        this.listingManager = listingManager;
     }
 
     @Override
@@ -70,6 +73,7 @@ public class ItemMarketplaceAccountDataProvider implements AccountDataProvider {
             try {
                 // Update seller_uuid on active listings from source to target
                 int rows = listingsDatabase.transferActiveListings(source, target);
+                listingManager.removeListingsBySeller(source);
                 // Transactions are audit/snapshot data and are not copied
                 return OperationResult.success(PROVIDER_ID, rows);
             } catch (SQLException e) {
@@ -84,6 +88,7 @@ public class ItemMarketplaceAccountDataProvider implements AccountDataProvider {
             try {
                 // Update seller_uuid on active listings from source to target
                 int rows = listingsDatabase.transferActiveListings(source, target);
+                listingManager.removeListingsBySeller(source);
                 // Transactions are audit/snapshot data and are not transferred
                 return OperationResult.success(PROVIDER_ID, rows);
             } catch (SQLException e) {
@@ -98,6 +103,7 @@ public class ItemMarketplaceAccountDataProvider implements AccountDataProvider {
             try {
                 int listingRows = listingsDatabase.deletePlayerListings(uuid);
                 int transactionRows = transactionHistoryDatabase.deletePlayerTransactions(uuid);
+                listingManager.removeListingsBySeller(uuid);
                 return OperationResult.success(PROVIDER_ID, listingRows + transactionRows);
             } catch (SQLException e) {
                 return OperationResult.failure(PROVIDER_ID, "Failed to delete marketplace data", e);
