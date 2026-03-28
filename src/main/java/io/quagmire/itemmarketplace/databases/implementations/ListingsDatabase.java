@@ -122,6 +122,51 @@ public class ListingsDatabase extends Database {
     }
   }
   
+  // --- AccountManagement DAO methods ---
+
+  public boolean hasPlayerListings(UUID sellerUuid) throws SQLException {
+    try (Connection connection = pool.getConnection();
+         PreparedStatement stmt = connection.prepareStatement(
+            "SELECT 1 FROM marketplace_listings WHERE seller_uuid = ? LIMIT 1")) {
+      stmt.setString(1, sellerUuid.toString());
+      try (ResultSet rs = stmt.executeQuery()) {
+        return rs.next();
+      }
+    }
+  }
+
+  public int countPlayerListings(UUID sellerUuid) throws SQLException {
+    try (Connection connection = pool.getConnection();
+         PreparedStatement stmt = connection.prepareStatement(
+            "SELECT COUNT(*) FROM marketplace_listings WHERE seller_uuid = ?")) {
+      stmt.setString(1, sellerUuid.toString());
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) return rs.getInt(1);
+        return 0;
+      }
+    }
+  }
+
+  public int transferActiveListings(UUID source, UUID target) throws SQLException {
+    try (Connection connection = pool.getConnection();
+         PreparedStatement stmt = connection.prepareStatement(
+            "UPDATE marketplace_listings SET seller_uuid = ?, last_update_date_utc = UTC_TIMESTAMP " +
+            "WHERE seller_uuid = ? AND is_active = TRUE")) {
+      stmt.setString(1, target.toString());
+      stmt.setString(2, source.toString());
+      return stmt.executeUpdate();
+    }
+  }
+
+  public int deletePlayerListings(UUID sellerUuid) throws SQLException {
+    try (Connection connection = pool.getConnection();
+         PreparedStatement stmt = connection.prepareStatement(
+            "DELETE FROM marketplace_listings WHERE seller_uuid = ?")) {
+      stmt.setString(1, sellerUuid.toString());
+      return stmt.executeUpdate();
+    }
+  }
+
   /**
    * Get all listings by a seller
    */

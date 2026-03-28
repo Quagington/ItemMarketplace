@@ -1,0 +1,68 @@
+name: ItemMarketplace
+main: io.quagmire.itemmarketplace.ItemMarketplacePlugin
+version: 1.0.0
+api-version: 1.20
+authors: [Quagmire]
+description: A marketplace plugin that allows players to buy and sell items
+
+depend: [QuagmireCore]
+softdepend: [AccountManagement]
+
+commands:
+  itemmarket:
+    description: Main command for ItemMarketplace
+    usage: /<command> [subcommand]
+    aliases: [im, market]
+    permission: itemmarket.use
+  sell:
+    description: List an item for sale
+    usage: /<command> <price>
+    permission: itemmarket.sell
+  marketplace:
+    description: Open the marketplace listing
+    usage: /<command>
+    aliases: [mp, shop]
+    permission: itemmarket.view
+  blackmarket:
+    description: Open the black market with discounted items
+    usage: /<command>
+    aliases: [bm, bmarket]
+    permission: itemmarket.blackmarket
+
+  transactions:
+    description: View your transaction history
+    usage: /<command>
+    aliases: [history, th]
+    permission: itemmarket.history
+  
+  itemmarketadmin:
+    description: Admin command for ItemMarketplace
+    usage: /<command> [subcommand]
+    aliases: [imadmin, marketadmin]
+    permission: itemmarket.admin
+
+# Permissions
+permissions:
+  itemmarket.use:
+    description: Allows using the main ItemMarketplace command
+    default: true
+  
+  itemmarket.sell:
+    description: Allows listing items for sale
+    default: true
+  
+  itemmarket.view:
+    description: Allows viewing the marketplace
+    default: true
+  
+  itemmarket.blackmarket:
+    description: Allows access to the black market
+    default: true
+  
+  itemmarket.history:
+    description: Allows viewing transaction history
+    default: true
+  
+  itemmarket.admin:
+    description: Gives access to admin commands
+    default: op

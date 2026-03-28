@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ListingsMenu extends LinkedMenu<ItemMarketplacePlugin> {
@@ -483,25 +484,87 @@ public class ListingsMenu extends LinkedMenu<ItemMarketplacePlugin> {
             return true;
         }
         
-        // Process purchase
-        try {
-            Optional<MarketplaceTransaction> transaction = plugin.getListingManager().purchaseItem(player, listing.getListingId());
-            
-            if (transaction.isPresent()) {
-                sendPurchaseSuccessMessage(player, listing);
-            } else {
-                player.sendMessage(plugin.getMessagesManager().get(Message.LISTING_PURCHASE_FAILED.name().toLowerCase()));
-                player.playSound(player.getLocation(), "entity.villager.no", 1.0f, 1.0f);
+        // Create placeholders for confirmation dialog
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("price", decimalFormat.format(listing.getPrice()));
+        OfflinePlayer seller = plugin.getServer().getOfflinePlayer(listing.getSellerUuid());
+        String sellerName = seller.getName() != null ? seller.getName() : "Unknown";
+        placeholders.put("seller", sellerName);
+        
+        // Create the item to display in confirmation menu
+        ItemStack confirmItem = listing.getItemStack().clone();
+        ItemMeta meta = confirmItem.getItemMeta();
+        if (meta != null) {
+            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            lore.add("");
+            lore.add(ChatColor.translateAlternateColorCodes('&', 
+                plugin.getMessagesManager().get(Message.PURCHASE_CONFIRM_PRICE.name().toLowerCase())
+                    .replace("%price%", decimalFormat.format(listing.getPrice()))));
+            lore.add(ChatColor.translateAlternateColorCodes('&', 
+                plugin.getMessagesManager().get(Message.PURCHASE_CONFIRM_SELLER.name().toLowerCase())
+                    .replace("%seller%", sellerName)));
+            meta.setLore(lore);
+            confirmItem.setItemMeta(meta);
+        }
+        
+        // Setup confirmation actions
+        Consumer<Player> onConfirm = p -> {
+            try {
+                processPurchase(p, listing);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error processing purchase: " + e.getMessage());
+                p.sendMessage(plugin.getMessagesManager().get(Message.ERROR_PROCESSING_PURCHASE.name().toLowerCase()));
+                p.playSound(p.getLocation(), "entity.villager.no", 1.0f, 1.0f);
             }
-        } catch (SQLException e) {
-            player.sendMessage(plugin.getMessagesManager().get(Message.ERROR_PROCESSING_PURCHASE.name().toLowerCase()));
-            plugin.getLogger().severe("Error processing purchase: " + e.getMessage());
+        };
+        
+        Consumer<Player> onCancel = p -> {
+            // Return to marketplace menu
+            plugin.getScheduler().runAtEntity(p, (task) -> {
+                openInventory(p, p);
+            });
+        };
+        
+        // Create confirmation menu
+        ConfirmationMenu confirmationMenu = new ConfirmationMenu(
+            plugin,
+            plugin.getMessagesManager().get(Message.PURCHASE_CONFIRM_TITLE.name().toLowerCase()),
+            confirmItem,
+            onConfirm,
+            onCancel,
+            placeholders
+        );
+        
+        // Register the menu temporarily
+        String menuName = "purchase_confirm_" + player.getUniqueId().toString().substring(0, 8);
+        plugin.getMenuManager().register(menuName, confirmationMenu);
+        
+        // Open the confirmation menu
+        plugin.getMenuManager().openMenu(player, player, menuName);
+        
+        return true;
+    }
+    
+    /**
+     * Process the actual purchase after confirmation
+     */
+    private void processPurchase(Player player, MarketplaceListing listing) throws SQLException {
+        Optional<MarketplaceTransaction> transaction = plugin.getListingManager().purchaseItem(player, listing.getListingId());
+        
+        if (transaction.isPresent()) {
+            sendPurchaseSuccessMessage(player, listing);
+            
+            // Send discord webhook if configured
+            plugin.getListingManager().sendDiscordWebhook(player, listing, transaction.get());
+        } else {
+            player.sendMessage(plugin.getMessagesManager().get(Message.LISTING_PURCHASE_FAILED.name().toLowerCase()));
             player.playSound(player.getLocation(), "entity.villager.no", 1.0f, 1.0f);
         }
         
-        // Always refresh after a purchase attempt
-        refresh(player);
-        return true;
+        // Always refresh the main menu after a purchase attempt
+        plugin.getScheduler().runAtEntity(player, (task) -> {
+            openInventory(player, player);
+        });
     }
     
     /**

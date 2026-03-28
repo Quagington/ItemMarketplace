@@ -6,12 +6,21 @@ import io.quagmire.itemmarketplace.databases.implementations.TransactionHistoryD
 import io.quagmire.itemmarketplace.model.MarketplaceListing;
 import io.quagmire.itemmarketplace.model.MarketplaceTransaction;
 import lombok.Getter;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +31,16 @@ import java.util.stream.Collectors;
 
 public class ListingManager {
     private final ConcurrentHashMap<Long, MarketplaceListing> activeListings = new ConcurrentHashMap<>();
+    private final DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
     
     @Getter private final ItemMarketplacePlugin plugin;
     
+    // Discord webhook URL from config
+    private String discordWebhookUrl = null;
+    
     public ListingManager(ItemMarketplacePlugin plugin) {
         this.plugin = plugin;
+        this.discordWebhookUrl = plugin.getConfig().getString("discord-webhook-url", null);
     }
     
     /**
@@ -86,7 +100,136 @@ public class ListingManager {
         activeListings.remove(listingId);
         plugin.getDatabaseCollection().getListingsDatabase().deactivateListing(listingId);
         
+        // Send webhook notification
+        sendDiscordWebhook(buyer, listing, transaction);
+        
         return Optional.of(transaction);
+    }
+    
+    /**
+     * Purchase a black market item with discount for buyer and bonus for seller
+     * 
+     * @param buyer The player making the purchase
+     * @param listingId The ID of the listing to purchase
+     * @param sellerBonusMultiplier The multiplier for seller's payment (typically 2x)
+     * @return The transaction record if successful
+     */
+    public Optional<MarketplaceTransaction> purchaseBlackMarketItem(Player buyer, long listingId, double sellerBonusMultiplier) throws SQLException {
+        MarketplaceListing listing = activeListings.get(listingId);
+        if (listing == null || !listing.isActive()) {
+            return Optional.empty();
+        }
+        
+        // Calculate bonus payment for seller
+        BigDecimal originalPrice = listing.getPrice();
+        BigDecimal sellerBonus = originalPrice.multiply(BigDecimal.valueOf(sellerBonusMultiplier));
+        
+        // Process purchase with the bonus for seller
+        MarketplaceTransaction transaction = plugin.getDatabaseCollection().getTransactionHistoryDatabase().recordBlackMarketTransaction(
+            listing.getListingId(),
+            listing.getSellerUuid(),
+            buyer.getUniqueId(),
+            listing.getItemStack(),
+            originalPrice,
+            sellerBonus,
+            true
+        );
+        
+        // Update or remove the listing
+        activeListings.remove(listingId);
+        plugin.getDatabaseCollection().getListingsDatabase().deactivateListing(listingId);
+        
+        // Notify seller about the bonus if they're online
+        Player seller = Bukkit.getPlayer(listing.getSellerUuid());
+        if (seller != null && seller.isOnline()) {
+            seller.sendMessage(plugin.getMessagesManager().get("blackmarket_bonus_seller"));
+        }
+        
+        // Send webhook notification
+        sendDiscordWebhook(buyer, listing, transaction);
+        
+        return Optional.of(transaction);
+    }
+    
+    /**
+     * Send purchase information to Discord webhook
+     */
+    public void sendDiscordWebhook(Player buyer, MarketplaceListing listing, MarketplaceTransaction transaction) {
+        if (discordWebhookUrl == null || discordWebhookUrl.isEmpty()) {
+            return;
+        }
+        
+        // Run async to avoid blocking the main thread
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Get seller name
+                OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.getSellerUuid());
+                String sellerName = seller.getName() != null ? seller.getName() : "Unknown";
+                
+                // Get item name
+                String itemName = "Unknown Item";
+                if (listing.getItemStack().hasItemMeta() && listing.getItemStack().getItemMeta().hasDisplayName()) {
+                    itemName = listing.getItemStack().getItemMeta().getDisplayName();
+                } else {
+                    itemName = listing.getItemStack().getType().toString();
+                }
+                
+                // Format price
+                String price = decimalFormat.format(listing.getPrice());
+                
+                // Create JSON payload
+                String jsonPayload = String.format(
+                    "{\"embeds\":[{\"title\":\"Item Purchased\",\"color\":65280,\"fields\":[" +
+                    "{\"name\":\"Item\",\"value\":\"%s\",\"inline\":true}," +
+                    "{\"name\":\"Amount\",\"value\":\"%s\",\"inline\":true}," +
+                    "{\"name\":\"Price\",\"value\":\"%s\",\"inline\":true}," +
+                    "{\"name\":\"Buyer\",\"value\":\"%s\",\"inline\":true}," +
+                    "{\"name\":\"Seller\",\"value\":\"%s\",\"inline\":true}," +
+                    "{\"name\":\"Black Market\",\"value\":\"%s\",\"inline\":true}" +
+                    "]}]}",
+                    itemName,
+                    listing.getItemStack().getAmount(),
+                    price,
+                    buyer.getName(),
+                    sellerName,
+                    listing.isBlackMarketItem() ? "Yes" : "No"
+                );
+                
+                // Send HTTP request
+                URL url = new URL(discordWebhookUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("User-Agent", "ItemMarketplace/1.0");
+                connection.setDoOutput(true);
+                
+                // Write payload
+                try (DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream())) {
+                    outputStream.writeBytes(jsonPayload);
+                    outputStream.flush();
+                }
+                
+                // Get response
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 204) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+                    
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+                    
+                    plugin.getLogger().warning("Discord webhook error: " + responseCode + " " + response);
+                }
+                
+                connection.disconnect();
+                
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to send Discord webhook: " + e.getMessage());
+            }
+        });
     }
     
     /**
@@ -161,5 +304,12 @@ public class ListingManager {
                 return itemName.contains(lowercaseSearch);
             })
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get player's transaction history
+     */
+    public List<MarketplaceTransaction> getPlayerTransactionHistory(UUID playerUuid) throws SQLException {
+        return plugin.getDatabaseCollection().getTransactionHistoryDatabase().getTransactionsByPlayer(playerUuid);
     }
 } 

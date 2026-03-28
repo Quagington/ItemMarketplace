@@ -37,10 +37,10 @@ repositories {
 }
 
 dependencies {
-  compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+  compileOnly("io.papermc.paper:paper-api:1.21.7-R0.1-SNAPSHOT")
 
-  compileOnly("io.quagmire:Core:2.2.63")
-
+  compileOnly("io.quagmire:Core:2.3.0")
+  compileOnly("com.trappedmc:AccountManagement-API:1.1.2")
 
   compileOnly("org.projectlombok:lombok:1.18.30")
   annotationProcessor("org.projectlombok:lombok:1.18.30")

@@ -21,6 +21,7 @@ public class MarketplaceListing {
   private final Timestamp createDateUtc;
   private final Timestamp lastUpdateDateUtc;
   private final Timestamp expiryDateUtc;
+  private boolean isBlackMarketItem;
 
   public MarketplaceListing(
     long listingId,
@@ -32,6 +33,20 @@ public class MarketplaceListing {
     Timestamp lastUpdateDateUtc,
     Timestamp expiryDateUtc
   ) {
+    this(listingId, sellerUuid, itemStack, price, isActive, createDateUtc, lastUpdateDateUtc, expiryDateUtc, false);
+  }
+  
+  public MarketplaceListing(
+    long listingId,
+    UUID sellerUuid,
+    ItemStack itemStack,
+    BigDecimal price,
+    boolean isActive,
+    Timestamp createDateUtc,
+    Timestamp lastUpdateDateUtc,
+    Timestamp expiryDateUtc,
+    boolean isBlackMarketItem
+  ) {
     this.listingId = listingId;
     this.sellerUuid = sellerUuid;
     this.itemStack = itemStack;
@@ -40,6 +55,7 @@ public class MarketplaceListing {
     this.createDateUtc = createDateUtc;
     this.lastUpdateDateUtc = lastUpdateDateUtc;
     this.expiryDateUtc = expiryDateUtc;
+    this.isBlackMarketItem = isBlackMarketItem;
   }
 
   public static MarketplaceListing deserialize(ResultSet rs) throws SQLException {
@@ -65,5 +81,9 @@ public class MarketplaceListing {
     } catch (SQLException e) {
       throw new SQLException("Error deserializing MarketplaceListing", e);
     }
+  }
+  
+  public void setBlackMarketItem(boolean isBlackMarketItem) {
+    this.isBlackMarketItem = isBlackMarketItem;
   }
 }

@@ -47,7 +47,45 @@ public enum Message {
   ERROR_PROCESSING_PURCHASE,
   PAGE_PREVIOUS,
   PAGE_NEXT,
-  PAGE_INFO;
+  PAGE_INFO,
+  
+  // Black market messages
+  BLACKMARKET_TITLE,
+  BLACKMARKET_COOLDOWN,
+  BLACKMARKET_NO_ITEMS,
+  BLACKMARKET_REFRESHED,
+  BLACKMARKET_BONUS_SELLER,
+  BLACKMARKET_DISCOUNT_INFO,
+  
+  // Transaction history messages
+  TRANSACTION_HISTORY_TITLE,
+  TRANSACTION_DATE,
+  TRANSACTION_TYPE,
+  TRANSACTION_AMOUNT,
+  TRANSACTION_BUYER,
+  TRANSACTION_SELLER,
+  TRANSACTION_ITEM,
+  TRANSACTION_PRICE,
+  NO_TRANSACTIONS,
+  
+  // Sell command messages
+  SELL_SUCCESS,
+  SELL_FAILURE,
+  SELL_NO_ITEM,
+  SELL_INVALID_PRICE,
+  SELL_CONFIRM_TITLE,
+  SELL_CONFIRM_DESCRIPTION,
+  SELL_CONFIRM_PRICE,
+  SELL_CONFIRM_ACCEPT,
+  SELL_CONFIRM_DECLINE,
+  
+  // Purchase confirmation messages
+  PURCHASE_CONFIRM_TITLE,
+  PURCHASE_CONFIRM_DESCRIPTION,
+  PURCHASE_CONFIRM_PRICE,
+  PURCHASE_CONFIRM_SELLER,
+  PURCHASE_CONFIRM_ACCEPT,
+  PURCHASE_CONFIRM_DECLINE;
 
   private static Map<Message, String> getDefaultValueMapping() {
     Map<Message, String> map = new HashMap<>();
@@ -92,6 +130,44 @@ public enum Message {
     map.put(Message.PAGE_PREVIOUS, "&aPrevious Page");
     map.put(Message.PAGE_NEXT, "&aNext Page");
     map.put(Message.PAGE_INFO, "&7Page %current_page% of %max_page%");
+    
+    // Black market messages
+    map.put(Message.BLACKMARKET_TITLE, "&8&l[&c&lBLACK MARKET&8&l]");
+    map.put(Message.BLACKMARKET_COOLDOWN, "&cYou must wait %time% minutes before refreshing the black market.");
+    map.put(Message.BLACKMARKET_NO_ITEMS, "&cThere are no items available for the black market right now.");
+    map.put(Message.BLACKMARKET_REFRESHED, "&aThe black market has been refreshed with new discounted items!");
+    map.put(Message.BLACKMARKET_BONUS_SELLER, "&aA black market item you listed was sold! You received a 2x bonus payment.");
+    map.put(Message.BLACKMARKET_DISCOUNT_INFO, "&8&l[BLACK MARKET ITEM - 50% OFF]");
+    
+    // Transaction history messages
+    map.put(Message.TRANSACTION_HISTORY_TITLE, "&e&lTransaction History");
+    map.put(Message.TRANSACTION_DATE, "&7Date: &f%date%");
+    map.put(Message.TRANSACTION_TYPE, "&7Type: &f%type%");
+    map.put(Message.TRANSACTION_AMOUNT, "&7Amount: &f%amount%");
+    map.put(Message.TRANSACTION_BUYER, "&7Buyer: &f%buyer%");
+    map.put(Message.TRANSACTION_SELLER, "&7Seller: &f%seller%");
+    map.put(Message.TRANSACTION_ITEM, "&7Item: &f%item%");
+    map.put(Message.TRANSACTION_PRICE, "&7Price: &f%price%");
+    map.put(Message.NO_TRANSACTIONS, "&cYou have no transaction history.");
+    
+    // Sell command messages
+    map.put(Message.SELL_SUCCESS, "&aYour item has been listed for &f%price%&a!");
+    map.put(Message.SELL_FAILURE, "&cFailed to list your item for sale.");
+    map.put(Message.SELL_NO_ITEM, "&cYou must be holding an item to sell.");
+    map.put(Message.SELL_INVALID_PRICE, "&cInvalid price. Please enter a valid number greater than 0.");
+    map.put(Message.SELL_CONFIRM_TITLE, "&e&lConfirm Listing");
+    map.put(Message.SELL_CONFIRM_DESCRIPTION, "&7Are you sure you want to list this item?");
+    map.put(Message.SELL_CONFIRM_PRICE, "&7Price: &f%price%");
+    map.put(Message.SELL_CONFIRM_ACCEPT, "&a&lConfirm");
+    map.put(Message.SELL_CONFIRM_DECLINE, "&c&lCancel");
+    
+    // Purchase confirmation messages
+    map.put(Message.PURCHASE_CONFIRM_TITLE, "&e&lConfirm Purchase");
+    map.put(Message.PURCHASE_CONFIRM_DESCRIPTION, "&7Are you sure you want to buy this item?");
+    map.put(Message.PURCHASE_CONFIRM_PRICE, "&7Price: &f%price%");
+    map.put(Message.PURCHASE_CONFIRM_SELLER, "&7Seller: &f%seller%");
+    map.put(Message.PURCHASE_CONFIRM_ACCEPT, "&a&lBuy");
+    map.put(Message.PURCHASE_CONFIRM_DECLINE, "&c&lCancel");
     
     return map;
   }
