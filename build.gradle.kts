@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.quagmire"
-version = "1.0.1"
+version = "1.0.2"
 
 java {
   toolchain.languageVersion.set(JavaLanguageVersion.of(25))
@@ -42,8 +42,8 @@ dependencies {
   compileOnly("io.quagmire:Core:2.3.0")
   compileOnly("com.trappedmc:AccountManagement-API:1.1.2")
 
-  compileOnly("org.projectlombok:lombok:1.18.30")
-  annotationProcessor("org.projectlombok:lombok:1.18.30")
+  compileOnly("org.projectlombok:lombok:1.18.44")
+  annotationProcessor("org.projectlombok:lombok:1.18.44")
 }
 
 val copyJar by tasks.registering(Copy::class) {
