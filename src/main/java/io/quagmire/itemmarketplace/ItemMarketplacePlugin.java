@@ -51,7 +51,7 @@ import java.util.HashMap;
 import java.util.function.Consumer;
 import java.math.BigDecimal;
 
-import io.quagmire.core.command.AliasCommand;
+import io.quagmire.core.commands.alias.AliasCommand;
 
 public class ItemMarketplacePlugin extends CorePlugin implements MenuPluginInterface {
   @Getter private final ChatToolkit chatToolkit;
