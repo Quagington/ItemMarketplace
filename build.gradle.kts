@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.quagmire"
-version = "1.0.2"
+version = "1.0.3"
 
 java {
   toolchain.languageVersion.set(JavaLanguageVersion.of(25))
@@ -37,7 +37,7 @@ repositories {
 }
 
 dependencies {
-  compileOnly("io.papermc.paper:paper-api:1.21.7-R0.1-SNAPSHOT")
+  compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
 
   compileOnly("io.quagmire:Core:2.3.0")
   compileOnly("com.trappedmc:AccountManagement-API:1.1.2")
